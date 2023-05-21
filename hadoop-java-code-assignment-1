@@ -1,0 +1,91 @@
+package weather;
+import java.io.IOException;
+import java.util.StringTokenizer;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.Reducer;
+import org.apache.conf.Configuration;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.fs.Path;
+
+
+public class Weather {
+	
+	public static class Map extends Mapper<LongWritable, Text, Text, Text>
+	{
+		public static final int missing = 9999;
+		
+		public void map(LongWritable arg0, Text Value, Context context)
+		    throws IOException, InterruptedException {
+			
+			String Line = Value.toString();
+			
+			if(!(Line.length() == 0)) {
+				
+				String Date = Line.substring(6,14);
+				
+				float Max_temp = Float.parseFloat(Line.substring(39, 45).trim());
+				
+				float Min_temp = Float.parseFloat(Line.substring(47, 53).trim());
+				
+				if(Max_temp > 40.0 && Max_temp != missing) {
+					
+					context.write(new Text("The day was Hot on " +Date), new Text(String.valueOf(Max_temp)));
+					
+				}
+				
+				if(Min_temp < 05.0 && Min_temp != missing) {
+					
+					context.write(new Text("The day was cold on " +Date), new Text(String.valueOf(Min_temp)));
+					
+				}
+			}
+		}
+	}
+	
+
+	public static class Reduce extends Reducer<Text, Text, Text, Text>
+	{
+		
+	}
+	
+	
+	public static void main(String[] args) throws Exception {
+		
+		Configuration conf= new Configuration();
+		
+		Job job = Job.getInstance(conf, "weather ");
+		
+		job.setJarByClass(Weather.class);
+		
+		job.setMapOutputKeyClass(Text.class);
+		
+		job.setMapOutputValueClass(Text.class);
+		
+		job.setMapperClass(Map.class);
+		
+		job.setReducerClass(Reduce.class);
+		
+		job.setInputFormatClass(TextInputFormat.class);
+		
+		job.setOutputFormatClass(TextOutputFormat.class);
+		
+		Path OutputPath = new Path(args[1]);
+		
+		FileInputFormat.addInputPath(job,new Path(args[0]));
+		
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+		
+		OutputPath.getFileSystem(conf).delete(OutputPath, true);
+		
+		System.exit(job.waitForCompletion(true) ? 0 : 1);
+		
+	}
+
+}
