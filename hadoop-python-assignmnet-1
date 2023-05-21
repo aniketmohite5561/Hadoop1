@@ -1,0 +1,37 @@
+import sys
+from mrjob.job import MRJob
+
+class MyMaxMin(MRJob):
+    # Mapper
+    
+    def mapper(self, _, line):
+        # Check for the empty line
+        if len(line) > 0:
+            # from character 6 to 14 we have the date in our dataset
+            date = line[6:14]
+            
+            # similarly we have taken the maximum temperature from 39 to 45 characters
+            temp_Max = float(line[39:45].strip())
+            
+            # similarly we have taken the minimum temperature from 47 to 53 characters
+            temp_Min = float(line[47:53].strip())
+            
+            # if maximum temperature is greater than 30, it is a hot day
+            if temp_Max > 30.0:
+                # Hot day
+                yield ("The Day is Hot Day :" + date, str(temp_Max))
+            
+            # if the minimum temperature is less than 15, it is a cold day
+            if temp_Min < 15:
+                # Cold day
+                yield ("The Day is Cold Day :" + date, str(temp_Min))
+
+    # Reducer
+    
+    def reducer(self, key, values):
+        # putting all the values in temperature variable of type String
+        temperature = next(values)
+        yield key, temperature
+
+if __name__ == '__main__':
+    MyMaxMin.run()
